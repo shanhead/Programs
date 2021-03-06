@@ -33,6 +33,21 @@ package edu.nmsu.cs.webserver;
  * 						and replace them with custom server message and date format, respectively
  */
 
+/*
+ * Code Modified by:	Shannon Head
+ * Date:				28 February 2021
+ * Changes Made:		1) Cleaned up and reorganized code from Program 1 (P1) by:
+ * 							- rewriting function run() entirely and modifying other functions as 
+ * 							necessary to match changes. 
+ * 							- combining functions writeGenericContent(), writeFileContent(), and
+ * 							writeError() back into a single function writeContent() which is called
+ * 							once at the end of run().
+ * 						2) Modified run() to parse the requested filepath for file type to be passed to 
+ * 						writeHTTPHeader() as parameter contentType.
+ * *Not done*						3) Implemented the ability to process images
+ */
+
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -40,6 +55,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+
+import javax.imageio.ImageIO;
 
 public class WebWorker implements Runnable
 {
@@ -61,58 +78,72 @@ public class WebWorker implements Runnable
 	 **/
 	public void run()
 	{
+		String conType = "";  			//content type
+		String path, fileType;
+		boolean valid = false;			// will become true if a valid file is found
+		boolean isImage = true;			// passed to writeContent
+		File tempfile;					// or if no file is requested.
+		
 		System.err.println("Handling connection...");
+		
+		
 		try
-		{
+		{			
 			InputStream is = socket.getInputStream();
 			OutputStream os = socket.getOutputStream();
-			String path = readHTTPRequest(is);
-			
-			// case: no request for file, print generic content
-			if ( path == null )
-			{
-				writeHTTPHeader(os, "text/html", true);
-				writeGenericContent(os);
-				os.flush();
-				socket.close();
-			} // end if
-			
-			// case: there is a file request
-			else
-			{
-				// attempt to open file; if valid, use os to write content of file 
-				try
-				{
-					File file = new File(path);
-					BufferedReader r = new BufferedReader( new FileReader(file));
-					writeHTTPHeader(os, "text/html", true);
-					writeFileContent(os, r);
-					r.close();
-					is.close();
-					os.flush();
-					socket.close();
-				} // end inner try
-				
-				// if file request fails, send 404 error
-				catch( Exception e )
-				{
-					System.err.println("Exception occurred: " + e);
-					writeHTTPHeader(os, "text/html", false);
-					writeError(os);
-					is.close();
-					os.flush();
-					socket.close();
-				} // end inner catch
-			} // end else
+			path = readHTTPRequest(is);
 
-		} // end outer try
-		
+			// case: no file requested
+			if (path == null)
+			{
+				conType = "text/html";
+				isImage = false;
+				valid = true;
+			}
+			
+			// case: file requested; identify file type and attempt to validate.
+			else 
+			{
+				fileType = path.substring(path.indexOf('.') + 1);
+				fileType = fileType.toLowerCase();
+				
+				tempfile = new File(path);
+				if (tempfile.exists())
+					valid = true;
+				
+				switch (fileType)
+				{
+				case "html":
+					isImage = false;
+					conType = "text/html";
+					break;
+				case "gif":
+				case "jpeg":
+				case "png":
+					conType = "image/".concat(fileType);
+					break;
+				case "ico":
+					conType = "image/x-icon";
+				default:
+					break;
+				}
+			}
+			
+			// with all information gathered, call other methods.
+			writeHTTPHeader(os, conType, valid);
+			writeContent(os, path, isImage);
+			os.flush();
+			socket.close();
+			
+		}
 		catch (Exception e)
 		{
-			System.err.println("Output error: " + e);
-		} // end outer catch
+			e.printStackTrace();
+		} // end catch
+		
 		System.err.println("Done handling connection.");
-		return;
+		return; 
+
 	} // end function run
 
 	/**
@@ -121,32 +152,36 @@ public class WebWorker implements Runnable
 	 * @return path
 	 * 			String representing filepath of requested file, if one exists.
 	 **/
-	private String readHTTPRequest(InputStream is)
+	private String readHTTPRequest(InputStream is) throws IOException
 	{
 		String line;
 		String path = "";
 		BufferedReader r = new BufferedReader(new InputStreamReader(is));
+		boolean keepGoing = true;
 		
-		while (true)
+		
+		while (keepGoing)
 		{
 			try
 			{
 				while (!r.ready())
+				{
 					Thread.sleep(1);
+				}
 				
 				line = r.readLine();
 				System.err.println("Request line: (" + line + ")");
 				
+				// case: null line, end of http request
 				if (line.length() == 0)
-					break;
-                
-				// if first 3 letters are GET, use String processing to get filepath
-				if (line.substring(0, 3).compareTo("GET") == 0)
+					keepGoing = false;
+				
+                // case: GET request, parse for filepath
+				else if (line.substring(0, 3).compareTo("GET") == 0)
 				{
-					// process string
 					path = line.substring(line.indexOf(' ') + 1);
 					path = path.substring(0, path.indexOf(' '));
-
+					
 					// case: no supplied path
 					if (path.length() < 2)
 						path = null;
@@ -158,12 +193,13 @@ public class WebWorker implements Runnable
 						path = directory.concat(path);
 					}
 				}
+				
+				else continue;
 			}
 			
 			catch (Exception e)
 			{
-				System.err.println("Request error: " + e);
-				break;
+				e.printStackTrace();
 			}
 		}
 		return path;
@@ -185,17 +221,17 @@ public class WebWorker implements Runnable
 		DateFormat df = DateFormat.getDateTimeInstance();
 		df.setTimeZone(TimeZone.getTimeZone("GMT"));
       
-      if (valid)
-		   os.write("HTTP/1.1 200 OK\n".getBytes());
-      else
-         os.write("HTTP/1.0 404\n".getBytes());
+		if (valid)
+			os.write("HTTP/1.1 200 OK\n".getBytes());
+		else
+			os.write("HTTP/1.0 404\n".getBytes());
          
-		os.write("Date: ".getBytes());
+      	os.write("Date: ".getBytes());
 		os.write((df.format(d)).getBytes());
 		os.write("\n".getBytes());
 		os.write("Server: Shan's CS 371 server\n".getBytes());
-		os.write("Last-Modified: Mon, 22 Feb 2021 18:17:15 MST\n".getBytes());
-		os.write("Content-Length: 438\n".getBytes());
+//		os.write("Last-Modified: Mon, 22 Feb 2021 18:17:15 MST\n".getBytes());
+//		os.write("Content-Length: 438\n".getBytes());
 		os.write("Connection: close\n".getBytes());
 		os.write("Content-Type: ".getBytes());
 		os.write(contentType.getBytes());
@@ -203,88 +239,88 @@ public class WebWorker implements Runnable
 		return;
 	} // end function writeHTTPHeader
 
-	
 	/**
-	 * Write generic content to client network connection; must be done after HTTP header 
-	 * has been written.
+	 * Write HTML text content to client connection; must be done after writing HTTP header
 	 * 
 	 * @param os
 	 * 			is the OutputStream object to write to
-	 **/
+	 * @param path
+	 * 			is the filepath the user is trying to access; null for generic content.
+	 * @param isPic
+	 * 			is the boolean indicating whether the requested file is an image
+	 */
 	
-	private void writeGenericContent(OutputStream os) throws Exception
+	private void writeContent(OutputStream os, String path, boolean isPic) throws Exception
 	{
-		os.write("<html><head></head><body>\n".getBytes());
-		os.write("<h3>My web server works!</h3>\n".getBytes());
-		os.write("</body></html>\n".getBytes());
-	} // end function writeGenericContent
+		
+		String serverTag = "<cs371server>";
+		String dateTag= "<cs371date>";
+		String line;
+		
+		// case: no path requested, write generic content
+		if (path == null)
+		{
+			os.write("<html lang=\"en\"><head><title>Homepage</title></head><body>\n".getBytes());
+			os.write("<h3>Welcome to Shan's 371 Simple Web Server!</h3>\n".getBytes());
+			os.write("</body></html>\n".getBytes());
+			return;
+		}
+		
+		// case: path exists
+		try
+		{
+			File file = new File(path);
+			
+			if (isPic)
+			{
+				String format = path.substring(path.indexOf('.') + 1);
+				BufferedImage pic = ImageIO.read(file);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ImageIO.write(pic, format, baos);
+				os.write(baos.toByteArray());
+			}
+			
+			else
+			{	
+				BufferedReader r = new BufferedReader(new FileReader(file));
+			
+				while (true)
+				{
+					line = r.readLine();
+					if (line == null)
+						break;
+				
+					// replaces <cs371server> tag with my server information
+					if (line.contains(serverTag))
+					{
+						String myServer = "Shan's CS371 Server";
+						line = line.replaceAll(serverTag, myServer);
+					}
+	            
+					// replaces <cs371date> tag with the current formatted date
+					if ( line.contains( dateTag ))
+					{
+						String form = "EEEEEEEEE, dd MMMMMMMMM yyyy";
+						SimpleDateFormat dateForm = new SimpleDateFormat( form );
+						Date date = new Date();
+						String dateStr = dateForm.format( date );
+						line = line.replaceAll( dateTag, dateStr );
+					}
+	            
+					os.write(line.getBytes());
+				}
+			}
+		}
+			
+		catch (Exception e)
+		{
+			System.err.println("\tError occurred in writeContent: " + e);
+		    os.write("<html><head></head><body>\n".getBytes());
+		    os.write("<h3>404 Not Found</h3>\n".getBytes());
+		    os.write("<h3>The page you were looking for could not be found</h3>\n".getBytes());
+		    os.write("</body></html>\n".getBytes());
+		}
 	
-	/**
-	 * Write the data content to the client network connection. This MUST be done after the HTTP
-	 * header has been written out.
-	 * 
-	 * @param os
-	 *          is the OutputStream object to write to
-     * @param r
-     *          is a BufferedReader object used to parse the file
-	 **/
-	private void writeFileContent(OutputStream os, BufferedReader r) throws Exception
-	{
-      String serverTag = "<cs371server>";
-      String dateTag = "<cs371date>";
-      String line;
-      
-      while (true)
-      {
-         try
-         {
-            line = r.readLine();
-            if (line == null) 
-               break;
-            
-            // replaces <cs371server> tag with my server information
-            if (line.contains(serverTag))
-            {
-               String myServer = "Shan's CS371 Server";
-               line = line.replaceAll(serverTag, myServer);
-            } 
-            
-            // replaces <cs371date> tag with the current formatted date
-            if ( line.contains( dateTag ))
-            {
-               String form = "EEEEEEEEE, dd MMMMMMMMM yyyy";
-               SimpleDateFormat dateForm = new SimpleDateFormat( form );
-               Date date = new Date();
-               String dateStr = dateForm.format( date );
-               line = line.replaceAll( dateTag, dateStr );
-            }
-            
-            os.write( line.getBytes() );
-         } 
-         
-         catch (Exception e)
-         {
-            System.err.println("Error occurred: " + e);
-            return;
-         } 
-      } 
-	} // end function writeFileContent
-   
-	/**
-	 * Write "404 Not Found" message in the case of an invalid file request. Must be done
-	 * after writeHTTPHeader() is called with boolean valid == false.
-	 * 
-	 * @param os
-	 * 			is the OutputStream object to write to
-	 *  
-	 **/
-   private void writeError(OutputStream os) throws Exception
-   {
-      os.write("<html><head></head><body>\n".getBytes());
-      os.write("<h3>404 Not Found</h3>\n".getBytes());
-      os.write("<h3>The page you were looking for could not be found</h3>\n".getBytes());
-      os.write("</body></html>\n".getBytes());
-      
-   } // end function writeError
-
+	}
+	
 } // end class

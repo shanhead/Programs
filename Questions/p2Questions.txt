@@ -1,0 +1,7 @@
+1. Estimated time: 4.5 hours
+2. Actual time:
+   - Thought/Design:	0.25
+   - Programming:	1.5
+   - Debugging:		3.0
+   - Total:		4.75
+3. Percent accuracy:	-5.26%
