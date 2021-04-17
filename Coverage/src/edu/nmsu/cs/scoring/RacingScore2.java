@@ -11,6 +11,15 @@ package edu.nmsu.cs.scoring;
  * @author Jon Cook, Ph.D.
  ***/
 
+/*
+ * Modified by:		Shannon Head
+ * Date:			11 April 2021
+ * Purpose:			Correct logical errors after 100% coverage testing with JaCoCo
+ * Changes made:	- Removed superfluous "args == null" condition from main() which made 100%
+ * 					coverage impossible.
+ * 					- Fixed case "score2 < score1 && score2 < score3" in overallScore()
+ */
+
 public class RacingScore2
 {
 
@@ -36,26 +45,23 @@ public class RacingScore2
 
 	public int overallScore()
 	{
-		int s, s1, s2;
-		if (score1 < score2 && score1 < score3)
+		int s;
+		int s1 = 0;
+		int s2 = 0;
+		if (score1 <= score2 && score1 <= score3)
 		{
 			s1 = score2;
 			s2 = score3;
 		}
-		else if (score2 < score1 && score2 < score3)
+		else if (score2 <= score1 && score2 <= score3)
 		{
 			s1 = score1;
-			s2 = score2;
-		}
-		else if (score3 < score1 && score3 < score2)
-		{
-			s1 = score1;
-			s2 = score2;
+			s2 = score3;
 		}
 		else
 		{
-			s1 = 99;
-			s2 = 99;
+			s1 = score1;
+			s2 = score2;
 		}
 		s = s1 + s2;
 		return s;
@@ -64,7 +70,7 @@ public class RacingScore2
 	public static void main(String args[])
 	{
 		int s1, s2, s3;
-		if (args == null || args.length != 3)
+		if (args.length != 3)
 		{
 			System.err.println("Error: must supply three arguments!");
 			return;

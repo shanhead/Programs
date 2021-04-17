@@ -12,6 +12,13 @@ package edu.nmsu.cs.scoring;
  * 
  ***/
 
+/*
+ * Modified by:		Shannon Head
+ * Date:			11 April 2021
+ * Purpose:			Correct functional errors after 100% coverage testing using JaCoCo
+ * Changes Made:	- Corrected logic error in overallScore()
+ */
+
 public class RacingScore1
 {
 
@@ -39,9 +46,9 @@ public class RacingScore1
 	{
 		int s;
 		if (score1 < score2)
-			s = score2;
-		else
 			s = score1;
+		else
+			s = score2;
 		if (s > score3)
 			s = score3;
 		s = (score1 + score2 + score3) - s;
