@@ -12,12 +12,13 @@ package edu.nmsu.cs.scoring;
  ***/
 
 /*
- * Modified by:		Shannon Head
- * Date:			11 April 2021
- * Purpose:			Correct logical errors after 100% coverage testing with JaCoCo
- * Changes made:	- Removed superfluous "args == null" condition from main() which made 100%
- * 					coverage impossible.
- * 					- Fixed case "score2 < score1 && score2 < score3" in overallScore()
+ * Modified by:   Shannon Head
+ * Date:          11 April 2021
+ * Purpose:	      Correct logical errors after 100% coverage testing with JaCoCo
+ * Changes made:  - Removed superfluous "args == null" condition from main() which made 100%
+ *                coverage impossible.
+ *                - Fixed case "score2 < score1 && score2 < score3" in overallScore()
+ *                - Changed < to <= in overallScore() and removed unneccessary else block
  */
 
 public class RacingScore2
@@ -45,24 +46,29 @@ public class RacingScore2
 
 	public int overallScore()
 	{
-		int s;
-		int s1 = 0;
-		int s2 = 0;
+		int s, s1, s2;
+      
+      // case: score1 is the smallest or tied for smallest
 		if (score1 <= score2 && score1 <= score3)
 		{
 			s1 = score2;
 			s2 = score3;
 		}
+      
+      // case: score2 is the smallest or tied
 		else if (score2 <= score1 && score2 <= score3)
 		{
 			s1 = score1;
 			s2 = score3;
 		}
+      
+      // case: score 3 is the smallest or tied
 		else
 		{
 			s1 = score1;
 			s2 = score2;
 		}
+      
 		s = s1 + s2;
 		return s;
 	}
