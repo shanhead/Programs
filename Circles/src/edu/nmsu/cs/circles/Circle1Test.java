@@ -83,6 +83,19 @@ public class Circle1Test
 		Assert.assertTrue(r == 6.0);
 	}
 
+	//
+	// Test an intersect function--should return true
+	//
+	@Test
+	public void intersect()
+	{
+		Circle1 iCircle = new Circle1(3, 5, 2);
+		boolean i;
+		System.out.println("Running test intersect.");
+		i = circle1.intersects(iCircle);
+		Assert.assertTrue(i);
+	}
+	
 	/***
 	 * NOT USED public static void main(String args[]) { try { org.junit.runner.JUnitCore.runClasses(
 	 * java.lang.Class.forName("Circle1Test")); } catch (Exception e) { System.out.println("Exception:
