@@ -58,6 +58,18 @@ public class Circle1Test
 		p = circle1.moveBy(-1, -1);
 		Assert.assertTrue(p.x == 0 && p.y == 1);
 	}
+	
+	//
+	// Test a positive move with different x and y values
+	//
+	@Test
+	public void unevenMove()
+	{
+		Point p;
+		System.out.println("Running test unevenMove.");
+		p = circle1.moveBy(5, 4);
+		Assert.assertTrue(p.x == 6 && p.y == 6);
+	}
 
 	/***
 	 * NOT USED public static void main(String args[]) { try { org.junit.runner.JUnitCore.runClasses(

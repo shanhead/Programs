@@ -56,7 +56,19 @@ public class Circle2Test
 		Point p;
 		System.out.println("Running test simpleMoveNeg.");
 		p = circle2.moveBy(-1, -1);
-		Assert.assertTrue(p.x == 0 && p.y == 1);
+		Assert.assertTrue("Test failed!", p.x == 0 && p.y == 1);
+	}
+	
+	//
+	// Test a positive move with different x and y values
+	//
+	@Test
+	public void unevenMove()
+	{
+		Point p;
+		System.out.println("Running test unevenMove.");
+		p = circle2.moveBy(5, 4);
+		Assert.assertTrue(p.x == 6 && p.y == 6);
 	}
 
 	/***
