@@ -70,6 +70,18 @@ public class Circle1Test
 		p = circle1.moveBy(5, 4);
 		Assert.assertTrue(p.x == 6 && p.y == 6);
 	}
+	
+	//
+	// Test a simple scale function
+	//
+	@Test
+	public void rescale()
+	{
+		double r;
+		System.out.println("Running test rescale.");
+		r = circle1.scale(2.0);
+		Assert.assertTrue(r == 6.0);
+	}
 
 	/***
 	 * NOT USED public static void main(String args[]) { try { org.junit.runner.JUnitCore.runClasses(
