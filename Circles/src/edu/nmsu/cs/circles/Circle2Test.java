@@ -82,6 +82,19 @@ public class Circle2Test
 		r = circle2.scale(2.0);
 		Assert.assertTrue(r == 6.0);
 	}
+	
+	//
+	// Test an intersect function--should return true
+	//
+	@Test
+	public void intersect()
+	{
+		Circle2 iCircle = new Circle2(3, 5, 2);
+		boolean i;
+		System.out.println("Running test intersect.");
+		i = circle2.intersects(iCircle);
+		Assert.assertTrue(i);
+	}
 
 	/***
 	 * NOT USED public static void main(String args[]) { try { org.junit.runner.JUnitCore.runClasses(
