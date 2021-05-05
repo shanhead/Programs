@@ -96,6 +96,19 @@ public class Circle1Test
 		Assert.assertTrue(i);
 	}
 	
+	//
+	// Test intersect function on touching circles--should return false
+	//
+	@Test
+	public void notIntersect()
+	{
+		Circle1 iCircle = new Circle1(8, 2, 4);
+		boolean i;
+		System.out.println("Running test notIntersect.");
+		i = circle1.intersects(iCircle);
+		Assert.assertFalse(i);
+	}
+	
 	/***
 	 * NOT USED public static void main(String args[]) { try { org.junit.runner.JUnitCore.runClasses(
 	 * java.lang.Class.forName("Circle1Test")); } catch (Exception e) { System.out.println("Exception:
